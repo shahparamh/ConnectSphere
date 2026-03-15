@@ -98,7 +98,7 @@ export const ChatProvider = ({ children }) => {
     if (!token) return
     const fetchRooms = async () => {
       try {
-        const res = await axios.get('http://localhost:5001/api/rooms', {
+        const res = await axios.get('/api/rooms', {
           headers: { Authorization: `Bearer ${token}` }
         })
         dispatch({ type: 'SET_ROOMS', payload: res.data })
@@ -160,7 +160,7 @@ export const ChatProvider = ({ children }) => {
 
     try {
       // Call our backend instead of Groq directly to avoid CORS issues
-      const response = await axios.post('http://localhost:5001/api/ai/chat', {
+      const response = await axios.post('/api/ai/chat', {
         message: userMessage,
         history,
         context: otherRoomsContext
@@ -228,7 +228,7 @@ export const ChatProvider = ({ children }) => {
     // Fetch messages for this room
     if (!state.messages[roomId]) {
       try {
-        const res = await axios.get(`http://localhost:5001/api/rooms/${roomId}/messages`, {
+        const res = await axios.get(`/api/rooms/${roomId}/messages`, {
           headers: { Authorization: `Bearer ${token}` }
         })
         dispatch({ type: 'SET_MESSAGES', roomId, payload: res.data })
@@ -255,13 +255,13 @@ export const ChatProvider = ({ children }) => {
   const addRoom = useCallback(async ({ name, phone }) => {
     try {
       // 1. Find user by phone
-      const userRes = await axios.get(`http://localhost:5001/api/users/find/${phone}`, {
+      const userRes = await axios.get(`/api/users/find/${phone}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       const targetUser = userRes.data
 
       // 2. Create/Get room
-      const roomRes = await axios.post('http://localhost:5001/api/rooms', {
+      const roomRes = await axios.post('/api/rooms', {
         participantId: targetUser._id
       }, {
         headers: { Authorization: `Bearer ${token}` }
