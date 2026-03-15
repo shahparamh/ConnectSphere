@@ -36,7 +36,9 @@ function ChatPreviewCard({ room, isActive, onClick }) {
 
   const lastMsgPreview = isTyping
     ? 'typing…'
-    : room.lastMessage || 'No messages yet'
+    : (typeof room.lastMessage === 'object' && room.lastMessage
+        ? room.lastMessage.text || `[${room.lastMessage.type || 'Message'}]`
+        : room.lastMessage) || 'No messages yet'
 
   const statusIcon = room.lastMessageStatus === 'read'
     ? <MdDoneAll size={13} className="tick-read" />
@@ -134,10 +136,10 @@ function ChatList({ activeId, onSelect, onNewContact, onDeleteChat, onOpenProfil
     let list = rooms
     if (query.trim()) {
       const q = query.toLowerCase()
-      list = list.filter(r =>
-        r.name.toLowerCase().includes(q) ||
-        r.lastMessage?.toLowerCase().includes(q)
-      )
+      list = list.filter(r => {
+        const msgText = typeof r.lastMessage === 'object' && r.lastMessage ? r.lastMessage.text : r.lastMessage
+        return r.name.toLowerCase().includes(q) || (msgText && String(msgText).toLowerCase().includes(q))
+      })
     }
     if (filter === 'unread') list = list.filter(r => r.unreadCount > 0)
     if (filter === 'groups') list = list.filter(r => r.isGroup)
