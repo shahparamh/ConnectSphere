@@ -6,7 +6,6 @@ import {
   MdNotifications, MdSettings, MdLogout
 } from 'react-icons/md'
 import Avatar from './Avatar'
-import SOSButton from './SOSButton'
 import ConnectSphereLogo from './ConnectSphereLogo'
 import './NavigationSidebar.css'
 
@@ -57,7 +56,15 @@ export default function NavigationSidebar() {
 
       {/* Bottom actions */}
       <div className="nav-bottom">
-        <SOSButton inSidebar isExpanded={expanded} />
+        <NavLink
+          to="/SOS"
+          className={({ isActive }) => `nav-link sos-nav-link ${isActive ? 'active' : ''}`}
+          aria-label="Emergency SOS"
+          title="Emergency SOS"
+        >
+          <span className="nav-icon sos-nav-icon">🆘</span>
+          {expanded && <span className="nav-label sos-nav-label">Emergency SOS</span>}
+        </NavLink>
         
         <button className="nav-link" title="Notifications" aria-label="Notifications" onClick={() => navigate('/alerts')}>
           <span className="nav-icon"><MdNotifications size={22} /></span>

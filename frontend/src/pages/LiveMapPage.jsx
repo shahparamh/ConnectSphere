@@ -282,66 +282,113 @@ function MapQuickPlaces({ placesOnMap, selectedPlace, onSelect }) {
   )
 }
 
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
+import L from 'leaflet'
+import { renderToStaticMarkup } from 'react-dom/server'
+
+// Fix Leaflet Default Icon issue (common in React builds)
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+// Custom Icon Helpers
+const createCustomIcon = (component) => {
+  return L.divIcon({
+    html: renderToStaticMarkup(component),
+    className: 'custom-leaflet-icon',
+    iconSize: [40, 40],
+    iconAnchor: [20, 20]
+  })
+}
+
 function OpenStreetMapEmbed({ center, friendsOnMap, placesOnMap, selectedFriend, setSelectedFriend, selectedPlace, setSelectedPlace, myLocation, zoomLevel, isSharing, heading, onRoute, onChat }) {
   const osmZoom = clamp(Math.round(14 + (zoomLevel - 1) * 5), 13, 17)
-  const centerWorld = latLngToWorld(center, osmZoom)
-  const originX = centerWorld.x - OSM_CANVAS_SIZE / 2
-  const originY = centerWorld.y - OSM_CANVAS_SIZE / 2
+  
+  // CartoDB Dark Matter style tile URL
+  const tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+  const attribution = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+
   const selected = friendsOnMap.find(friend => friend._id === selectedFriend)
-  const routePath = selected
-    ? makeRoutePath(myLocation, selected.location).map(point => projectToViewport(point, center, osmZoom))
-    : null
   const selectedPlaceCard = placesOnMap.find(place => place.id === selectedPlace)
-  const tiles = []
-
-  for (let dx = -OSM_TILE_RADIUS; dx <= OSM_TILE_RADIUS; dx += 1) {
-    for (let dy = -OSM_TILE_RADIUS; dy <= OSM_TILE_RADIUS; dy += 1) {
-      const tileX = Math.floor(centerWorld.x / OSM_TILE_SIZE) + dx
-      const tileY = Math.floor(centerWorld.y / OSM_TILE_SIZE) + dy
-      const tilesPerAxis = 2 ** osmZoom
-      if (tileY < 0 || tileY >= tilesPerAxis) continue
-      const wrappedTileX = ((tileX % tilesPerAxis) + tilesPerAxis) % tilesPerAxis
-      const left = ((tileX * OSM_TILE_SIZE - originX) / OSM_CANVAS_SIZE) * 100
-      const top = ((tileY * OSM_TILE_SIZE - originY) / OSM_CANVAS_SIZE) * 100
-      tiles.push({
-        key: `${wrappedTileX}-${tileY}-${osmZoom}`,
-        src: `https://tile.openstreetmap.org/${osmZoom}/${wrappedTileX}/${tileY}.png`,
-        left,
-        top,
-      })
-    }
-  }
-
-  const myPos = projectToViewport(center, center, osmZoom)
 
   return (
     <div className="mc-root" aria-label="Live location map">
-      <div className="mc-osm-frame mc-osm-stage" aria-hidden>
-        {tiles.map(tile => (
-          <img
-            key={tile.key}
-            className="mc-osm-tile"
-            src={tile.src}
-            alt=""
-            loading="lazy"
-            draggable="false"
-            style={{ left: `${tile.left}%`, top: `${tile.top}%` }}
-          />
-        ))}
-        {/* Realistic Depth Layers */}
-        <div className="mc-osm-scrim" />
-        <div className="mc-osm-vignette" />
+      <MapContainer 
+        center={[center.lat, center.lng]} 
+        zoom={osmZoom} 
+        scrollWheelZoom={true} 
+        style={{ width: '100%', height: '100%' }}
+        zoomControl={false}
+      >
+        <TileLayer
+          url={tileUrl}
+          attribution={attribution}
+        />
         
-        {/* Traffic Simulation */}
-        <div className="mc-traffic-layer">
-          <div className="traffic-dot td-1" />
-          <div className="traffic-dot td-2" />
-          <div className="traffic-dot td-3" />
+        {/* My Location Marker */}
+        <Marker 
+          position={[center.lat, center.lng]} 
+          icon={createCustomIcon(<UserLocationMarker x={50} y={50} />)}
+        />
+
+        {/* Friend Markers */}
+        {friendsOnMap.map(friend => (
+          friend.location && (
+            <Marker 
+              key={friend._id}
+              position={[friend.location.lat, friend.location.lng]}
+              icon={createCustomIcon(
+                <FriendLocationMarker 
+                  contact={friend} 
+                  x={50} y={50} 
+                  selected={selectedFriend === friend._id}
+                />
+              )}
+              eventHandlers={{
+                click: () => setSelectedFriend(friend._id === selectedFriend ? null : friend._id),
+              }}
+            />
+          )
+        ))}
+
+        {/* Place Markers */}
+        {placesOnMap.map(place => (
+          place.location && (
+            <Marker 
+              key={place.id}
+              position={[place.location.lat, place.location.lng]}
+              icon={createCustomIcon(
+                <PlaceMarker 
+                  place={place} 
+                  x={50} y={50} 
+                  selected={selectedPlace === place.id}
+                />
+              )}
+              eventHandlers={{
+                click: () => setSelectedPlace(place.id === selectedPlace ? null : place.id),
+              }}
+            />
+          )
+        ))}
+      </MapContainer>
+
+      {/* Overlays for Interaction Cards */}
+      {selected && (
+        <div className="mc-selected-card">
+          <p className="mc-selected-name">{selected.name}</p>
+          <p className="mc-selected-sub">
+            {Math.round(calcDistance(myLocation.lat, myLocation.lng, selected.location.lat, selected.location.lng))}m away
+          </p>
+          <div className="mc-selected-actions">
+            <button className="flm-action" onClick={() => onRoute(selected)}><MdNavigation size={14} /> Route</button>
+            <button className="flm-action" onClick={() => onChat(selected)}><MdChat size={14} /> Chat</button>
+          </div>
         </div>
-      </div>
-      <div className="mc-overlay-layer">
-        <UserLocationMarker x={myPos.x} y={myPos.y} />
-      </div>
+      )}
 
       {selectedPlaceCard && (
         <div className="mc-selected-card">
@@ -528,6 +575,18 @@ export default function LiveMapPage() {
   const [selectedPlace, setSelectedPlace] = useState('p1')
 
   const [googleQuotaExceeded, setQuotaExceeded] = useState(false)
+
+  // Handle Google Maps Auth/Quota Failure robustly
+  useEffect(() => {
+    window.gm_authFailure = () => {
+      console.warn('Google Maps auth/quota failure detected.')
+      setQuotaExceeded(true)
+    }
+    return () => {
+      delete window.gm_authFailure
+    }
+  }, [])
+
   const center = myLocation || DEFAULT_CENTER
   const friendsOnMap = useMemo(() => {
     const fallbackFriends = createNearbyFriends(center)

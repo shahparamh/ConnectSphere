@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef, useContext, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { GoogleMap, MarkerF, PolylineF, useJsApiLoader } from '@react-google-maps/api'
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
+import L from 'leaflet'
+import { renderToStaticMarkup } from 'react-dom/server'
 import {
   MdArrowBack, MdMoreVert, MdSend, MdAttachFile,
   MdEmojiEmotions, MdLocationOn, MdMic, MdStopCircle,
@@ -178,12 +182,9 @@ function MessageBubble({ message, showAvatar, room, isAI }) {
           <div className={`bubble bubble-location ${isSent ? 'bubble-sent' : 'bubble-recv'}`} style={{ padding: 0, overflow: 'hidden', maxWidth: '250px' }}>
             <div className="loc-map-thumb" style={{ width: '100%', height: '150px', position: 'relative' }}>
               <img 
-                src={mapError || !location 
-                     ? `https://static-maps.yandex.ru/1.x/?ll=${location?.longitude || 77.5946},${location?.latitude || 12.9716}&z=14&l=map&size=250,150` 
-                     : `https://maps.googleapis.com/maps/api/staticmap?center=${location?.latitude},${location?.longitude}&zoom=14&size=250x150&markers=color:red%7C${location?.latitude},${location?.longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_KEY}`} 
+                src={`https://static-maps.yandex.ru/1.x/?ll=${location?.longitude || 77.5946},${location?.latitude || 12.9716}&z=14&l=map&size=250,150`} 
                 alt="Location Preview" 
                 style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                onError={() => setMapError(true)}
               />
             </div>
             <div className="loc-info">
@@ -637,6 +638,18 @@ const projectToViewport = (point, center, zoom) => {
 }
 
 /* ──────────────────────────────────────
+   Custom Icon Helper for ChatPage
+────────────────────────────────────── */
+const createCustomIcon = (component) => {
+  return L.divIcon({
+    html: renderToStaticMarkup(component),
+    className: 'custom-leaflet-icon',
+    iconSize: [24, 24],
+    iconAnchor: [12, 12]
+  })
+}
+
+/* ──────────────────────────────────────
    Map Preview Card (right panel)
 ────────────────────────────────────── */
 function MapPreviewCard({ room }) {
@@ -644,6 +657,7 @@ function MapPreviewCard({ room }) {
   const contactLoc = contactLocations[room?.contactId]
   const [zoomLevel, setZoomLevel] = useState(15)
   const [showLocModal, setLocModal] = useState(false)
+  const [googleQuotaExceeded, setQuotaExceeded] = useState(false)
   
   const center = myLocation || { lat: 12.9716, lng: 77.5946 }
   const target = contactLoc || { lat: center.lat + 0.0034, lng: center.lng + 0.0042, accuracy: 15 }
@@ -654,29 +668,24 @@ function MapPreviewCard({ room }) {
     googleMapsApiKey: googleApiKey
   })
 
-  // OSM Fallback logic
-  const myPos = projectToViewport(center, center, zoomLevel)
-  const contactPos = projectToViewport(target, center, zoomLevel)
-  const safeCafePos = projectToViewport({ lat: center.lat + 0.0042, lng: center.lng - 0.0055 }, center, zoomLevel)
-  const metroHubPos = projectToViewport({ lat: center.lat - 0.0028, lng: center.lng + 0.0068 }, center, zoomLevel)
-
-  const centerWorld = latLngToWorld(center, zoomLevel)
-  const originX = centerWorld.x - OSM_CANVAS_SIZE / 2
-  const originY = centerWorld.y - OSM_CANVAS_SIZE / 2
-  const tiles = []
-  if (!googleApiKey || !isLoaded) {
-    for (let dx = -3; dx <= 3; dx++) {
-      for (let dy = -3; dy <= 3; dy++) {
-        const tileX = Math.floor(centerWorld.x / OSM_TILE_SIZE) + dx
-        const tileY = Math.floor(centerWorld.y / OSM_TILE_SIZE) + dy
-        const left = ((tileX * OSM_TILE_SIZE - originX) / OSM_CANVAS_SIZE) * 100
-        const top = ((tileY * OSM_TILE_SIZE - originY) / OSM_CANVAS_SIZE) * 100
-        tiles.push({ key: `${tileX}-${tileY}`, src: `https://tile.openstreetmap.org/${zoomLevel}/${tileX}/${tileY}.png`, left, top })
+  // Handle Google Maps Auth/Quota Failure
+  useEffect(() => {
+    const handleAuthFailure = () => {
+      setQuotaExceeded(true)
+    }
+    window.gm_authFailure = handleAuthFailure
+    return () => {
+      if (window.gm_authFailure === handleAuthFailure) {
+        delete window.gm_authFailure
       }
     }
-  }
+  }, [])
 
   const distanceKm = calcDistanceKm(center, target)
+  const canUseGoogle = googleApiKey && isLoaded && !loadError && !googleQuotaExceeded
+
+  // Tile URL for dark theme fallback
+  const tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
 
   return (
     <aside className="map-panel" aria-label="Map panel">
@@ -687,7 +696,7 @@ function MapPreviewCard({ room }) {
       </div>
 
       <div className="mp-map">
-        {googleApiKey && isLoaded && !loadError ? (
+        {canUseGoogle ? (
           <GoogleMap
             mapContainerStyle={{ width: '100%', height: '100%' }}
             center={{ lat: center.lat, lng: center.lng }}
@@ -702,20 +711,32 @@ function MapPreviewCard({ room }) {
             <MarkerF position={{ lat: center.lat, lng: center.lng }} title="You" />
           </GoogleMap>
         ) : (
-          <>
-            <div className="mp-osm-stage">
-              {tiles.map(tile => (
-                <img key={tile.key} className="mp-osm-tile" src={tile.src} alt="" style={{ left: `${tile.left}%`, top: `${tile.top}%` }} />
-              ))}
-              <div className="mp-osm-scrim" />
-            </div>
+          <MapContainer 
+            center={[center.lat, center.lng]} 
+            zoom={15} 
+            scrollWheelZoom={true} 
+            style={{ width: '100%', height: '100%' }}
+            zoomControl={false}
+          >
+            <TileLayer
+              url={tileUrl}
+              attribution='&copy; CARTO'
+            />
+            
+            {/* My Location Marker */}
+            <Marker 
+              position={[center.lat, center.lng]} 
+              icon={createCustomIcon(<div className="mp-marker mp-marker-me"><div className="mp-me-dot" /></div>)}
+            />
 
-            <div className="mp-map-overlay" aria-hidden>
-            <div className="mp-marker mp-marker-me" style={{ top: `${myPos.y}%`, left: `${myPos.x}%` }}>
-              <div className="mp-me-dot" aria-label="Your location" />
-            </div>
-            </div>
-          </>
+            {/* Contact Location Marker */}
+            {contactLoc && (
+              <Marker 
+                position={[contactLoc.lat, contactLoc.lng]} 
+                icon={createCustomIcon(<div className="mp-marker mp-marker-contact"><Avatar initials={room?.initials || '??'} size={24} color={room?.color} /></div>)}
+              />
+            )}
+          </MapContainer>
         )}
       </div>
 
