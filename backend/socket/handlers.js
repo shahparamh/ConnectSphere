@@ -83,10 +83,26 @@ const registerSocketHandlers = (io) => {
         })
 
         // Confirm delivery to sender
-        socket.emit('message-sent', { tempId: message.tempId, messageId: msg._id })
+        socket.emit('message-sent', { tempId: message.tempId, messageId: msg._id, roomId })
       } catch (err) {
         socket.emit('message-error', { error: err.message })
       }
+    })
+
+    // ── Message Status Updates ─────────────────────
+    socket.on('message-delivered', async ({ messageId, roomId }) => {
+      try {
+        await Message.findByIdAndUpdate(messageId, { status: 'delivered' })
+        socket.to(roomId).emit('message-status', { roomId, messageId, status: 'delivered' })
+      } catch {}
+    })
+
+    socket.on('mark-read', async ({ roomId, messageIds }) => {
+      try {
+        if (!messageIds || messageIds.length === 0) return
+        await Message.updateMany({ _id: { $in: messageIds } }, { status: 'read' })
+        socket.to(roomId).emit('messages-read', { roomId, messageIds, status: 'read' })
+      } catch {}
     })
 
     // ── Typing indicators ──────────────────────────

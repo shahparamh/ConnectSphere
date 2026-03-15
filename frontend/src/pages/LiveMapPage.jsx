@@ -201,9 +201,15 @@ function PlaceMarker({ place, x, y, selected, onClick }) {
   )
 }
 
-function GoogleLiveMap({ center, friendsOnMap, placesOnMap, selectedFriend, setSelectedFriend, selectedPlace, setSelectedPlace, myLocation, mapStyle, zoomLevel, onRoute, onChat }) {
+function GoogleLiveMap({ center, friendsOnMap, placesOnMap, selectedFriend, setSelectedFriend, selectedPlace, setSelectedPlace, myLocation, mapStyle, zoomLevel, onRoute, onChat, onLoadError }) {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_KEY
-  const { isLoaded } = useJsApiLoader({ id: 'connectsphere-live-map', googleMapsApiKey: apiKey })
+  const { isLoaded, loadError } = useJsApiLoader({ id: 'connectsphere-live-map', googleMapsApiKey: apiKey })
+
+  useEffect(() => {
+    if (loadError && onLoadError) {
+      onLoadError()
+    }
+  }, [loadError, onLoadError])
 
   if (!isLoaded) return <div className="mc-root mc-loading">Loading map…</div>
 
@@ -521,6 +527,7 @@ export default function LiveMapPage() {
   const [heading] = useState(42)
   const [selectedPlace, setSelectedPlace] = useState('p1')
 
+  const [googleQuotaExceeded, setQuotaExceeded] = useState(false)
   const center = myLocation || DEFAULT_CENTER
   const friendsOnMap = useMemo(() => {
     const fallbackFriends = createNearbyFriends(center)
@@ -542,7 +549,7 @@ export default function LiveMapPage() {
   }, [center, contactLocations])
   const placesOnMap = useMemo(() => createNearbyPlaces(center), [center])
   const sharingWith = friendsOnMap
-  const hasGoogleMaps = Boolean(import.meta.env.VITE_GOOGLE_MAPS_KEY)
+  const hasGoogleMaps = Boolean(import.meta.env.VITE_GOOGLE_MAPS_KEY) && !googleQuotaExceeded
 
   useEffect(() => {
     if (!sharingActive || isPaused || countdown === null) return
@@ -595,6 +602,7 @@ export default function LiveMapPage() {
             zoomLevel={zoomLevel}
             onRoute={handleRoute}
             onChat={handleChat}
+            onLoadError={() => setQuotaExceeded(true)}
           />
         ) : (
           <OpenStreetMapEmbed

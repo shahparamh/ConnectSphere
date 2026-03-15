@@ -15,6 +15,7 @@ import { LocationContext } from '../context/LocationContext'
 import Avatar from '../components/Avatar'
 import LocationShareModal from '../components/LocationShareModal'
 import ContactProfileModal from '../components/ContactProfileModal'
+import axios from 'axios'
 import './ChatPage.css'
 
 /* ──────────────────────────────────────
@@ -84,7 +85,13 @@ function VoiceWaveform({ bars = 28, playing, progress = 0 }) {
    Message Bubble
 ────────────────────────────────────── */
 function MessageBubble({ message, showAvatar, room, isAI }) {
-  const { isSent, text, type, status, timestamp, duration } = message
+  const { isSent: isSentProp, text, type, status, timestamp, duration, createdAt } = message
+  const { user } = useContext(AuthContext)
+  const isSent = isSentProp !== undefined 
+    ? isSentProp 
+    : String(message.senderId?._id || message.senderId) === String(user?._id)
+  const timeSrc = timestamp || createdAt
+  
   const [voicePlaying, setVoicePlaying] = useState(false)
   const [voiceProgress, setVoiceProgress] = useState(0)
   const voiceTimerRef = useRef(null)
@@ -134,7 +141,7 @@ function MessageBubble({ message, showAvatar, room, isAI }) {
           <div className={`bubble ${isSent ? 'bubble-sent' : 'bubble-recv'} ${!isSent && isAI ? 'bubble-ai' : ''}`}>
             <p className="bubble-text">{text}</p>
             <div className="bubble-meta">
-              <span className="bubble-time">{fmtTime(timestamp)}</span>
+              <span className="bubble-time">{fmtTime(timeSrc)}</span>
               {isSent && <ReceiptIcon status={status} />}
             </div>
           </div>
@@ -159,7 +166,7 @@ function MessageBubble({ message, showAvatar, room, isAI }) {
               </span>
             </div>
             <div className="bubble-meta voice-meta">
-              <span className="bubble-time">{fmtTime(timestamp)}</span>
+              <span className="bubble-time">{fmtTime(timeSrc)}</span>
               {isSent && <ReceiptIcon status={status} />}
             </div>
           </div>
@@ -205,7 +212,7 @@ function MessageBubble({ message, showAvatar, room, isAI }) {
               <p className="loc-sublabel">Tap to open in map</p>
             </div>
             <div className="bubble-meta">
-              <span className="bubble-time">{fmtTime(timestamp)}</span>
+              <span className="bubble-time">{fmtTime(timeSrc)}</span>
               {isSent && <ReceiptIcon status={status} />}
             </div>
           </div>
@@ -214,12 +221,16 @@ function MessageBubble({ message, showAvatar, room, isAI }) {
         {/* ── Image / file message ── */}
         {type === 'image' && (
           <div className={`bubble bubble-image ${isSent ? 'bubble-sent' : 'bubble-recv'}`}>
-            <div className="image-placeholder">
-              <MdImage size={32} opacity={0.4} />
-              <span>Photo</span>
-            </div>
+            {(text?.startsWith('data:image') || text?.startsWith('/uploads/')) ? (
+              <img src={text} alt="Shared" className="bubble-image-content" style={{ maxWidth: '100%', borderRadius: '8px', display: 'block' }} />
+            ) : (
+              <div className="image-placeholder">
+                <MdImage size={32} opacity={0.4} />
+                <span>Photo</span>
+              </div>
+            )}
             <div className="bubble-meta">
-              <span className="bubble-time">{fmtTime(timestamp)}</span>
+              <span className="bubble-time">{fmtTime(timeSrc)}</span>
               {isSent && <ReceiptIcon status={status} />}
             </div>
           </div>
@@ -329,7 +340,8 @@ function MessageList({ messages, room, typingActive }) {
   const grouped = useMemo(() => {
     const groups = {}
     messages.forEach(m => {
-      const label = new Date(m.timestamp).toLocaleDateString(undefined,
+      const msgDate = m.timestamp || m.createdAt || new Date()
+      const label = new Date(msgDate).toLocaleDateString(undefined,
         { weekday: 'long', month: 'long', day: 'numeric' })
       if (!groups[label]) groups[label] = []
       groups[label].push(m)
@@ -389,6 +401,7 @@ function MessageList({ messages, room, typingActive }) {
    Chat Input
 ────────────────────────────────────── */
 function ChatInput({ roomId, onSend, onLocationShare }) {
+  const { token } = useContext(AuthContext)
   const [text, setText] = useState('')
   const [recording, setRecording] = useState(false)
   const [recDuration, setRecDuration] = useState(0)
@@ -438,9 +451,23 @@ function ChatInput({ roomId, onSend, onLocationShare }) {
     const file = e.target.files?.[0]
     if (!file) return
     
-    // In a real app, we'd upload to a server. 
-    // For this demo, we'll simulate sending the file.
-    onSend(file.name, type === 'image' ? 'image' : 'file', { fileName: file.name, fileSize: (file.size / 1024).toFixed(1) + ' KB' })
+    const formData = new FormData()
+    formData.append('file', file)
+
+    // Create a local-only instance to bypass absolute production defaults
+    const localApi = axios.create({ baseURL: '' })
+
+    localApi.post('/api/upload', formData, {
+      headers: { 
+        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${token}`
+      }
+    }).then(res => {
+      onSend(res.data.fileUrl, type, { fileName: file.name, fileSize: (file.size / 1024).toFixed(1) + ' KB' })
+    }).catch(err => {
+      console.error('FileUpload error:', err)
+    })
+    
     setShowAttach(false)
     e.target.value = '' // Reset for next selection
   }
@@ -641,7 +668,7 @@ function MapPreviewCard({ room }) {
   const target = contactLoc || { lat: center.lat + 0.0034, lng: center.lng + 0.0042, accuracy: 15 }
 
   const googleApiKey = import.meta.env.VITE_GOOGLE_MAPS_KEY
-  const { isLoaded } = useJsApiLoader({
+  const { isLoaded, loadError } = useJsApiLoader({
     id: 'sidebar-map-preview',
     googleMapsApiKey: googleApiKey
   })
@@ -679,7 +706,7 @@ function MapPreviewCard({ room }) {
       </div>
 
       <div className="mp-map">
-        {googleApiKey && isLoaded ? (
+        {googleApiKey && isLoaded && !loadError ? (
           <GoogleMap
             mapContainerStyle={{ width: '100%', height: '100%' }}
             center={{ lat: center.lat, lng: center.lng }}
@@ -757,15 +784,16 @@ function MapPreviewCard({ room }) {
 /* ──────────────────────────────────────
    ChatPage — Root Export
 ────────────────────────────────────── */
-export default function ChatPage({ inlineRoomId }) {
+export default function ChatPage({ inlineRoomId, onBack }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const roomId = inlineRoomId || id
 
-  const { messages, sendMessage, setActiveRoom, typing } = useContext(ChatContext)
-  const { user } = useContext(AuthContext)
+  const { messages, sendMessage, setActiveRoom, typing, rooms } = useContext(ChatContext)
+  const { user, token } = useContext(AuthContext)
 
-  const room = MOCK_ROOMS.find(r => r._id === roomId) || MOCK_ROOMS[0]
+  const room = (rooms || []).find(r => r._id === roomId) || MOCK_ROOMS.find(r => r._id === roomId) || MOCK_ROOMS[0]
+  const otherParticipant = room?.participants?.find(p => String(p._id) !== String(user?._id))
   const roomMsgs = messages[room._id] || MOCK_MESSAGES[room._id] || []
   const isTyping = typing?.[room._id]
 
@@ -795,7 +823,7 @@ export default function ChatPage({ inlineRoomId }) {
       <div className="chat-main">
         <ChatHeader
           room={room}
-          onBack={() => navigate('/dashboard')}
+          onBack={onBack || (() => navigate('/dashboard'))}
           onToggleMap={() => setMapVisible(v => !v)}
           mapVisible={mapVisible}
           typing={isTyping}
@@ -823,7 +851,13 @@ export default function ChatPage({ inlineRoomId }) {
         <MapPreviewCard room={room} />
       )}
 
-      {showLocModal && <LocationShareModal onClose={() => setLocModal(false)} />}
+      {showLocModal && (
+        <LocationShareModal 
+          onClose={() => setLocModal(false)} 
+          preSelectedId={otherParticipant?._id} 
+          hideContactPicker={true}
+        />
+      )}
       
       {showContactProfile && (
         <ContactProfileModal 

@@ -117,7 +117,7 @@ function MapPreviewSection({ mode, location, permissionState }) {
 /* ──────────────────────────────────────
    Step 1 – Mode & Options
 ────────────────────────────────────── */
-function StepOptions({ mode, setMode, duration, setDuration, contacts, selectedContacts, toggleContact, onNext, onCancel }) {
+function StepOptions({ mode, setMode, duration, setDuration, contacts, selectedContacts, toggleContact, onNext, onCancel, hideContactPicker }) {
   const canProceed = selectedContacts.length > 0
 
   return (
@@ -178,43 +178,45 @@ function StepOptions({ mode, setMode, duration, setDuration, contacts, selectedC
       )}
 
       {/* Contact selector */}
-      <div className="lsm-section">
-        <p className="lsm-section-label">
-          <MdPeople size={14} /> Share with
-          {selectedContacts.length > 0 && (
-            <span className="lsm-selected-count">{selectedContacts.length} selected</span>
-          )}
-        </p>
-        <div className="lsm-contacts" role="group" aria-label="Select contacts">
-          {contacts.map(c => {
-            const sel = selectedContacts.includes(c._id)
-            return (
-              <button
-                key={c._id}
-                className={`lsm-contact-btn ${sel ? 'selected' : ''}`}
-                onClick={() => toggleContact(c._id)}
-                aria-pressed={sel}
-                aria-label={`${sel ? 'Deselect' : 'Select'} ${c.name}`}
-              >
-                <div className="lsm-contact-avatar-wrap">
-                  <Avatar initials={c.initials} size={40} isOnline={c.isOnline} />
-                  {sel && (
-                    <div className="lsm-contact-check" aria-hidden>
-                      <MdCheck size={12} />
-                    </div>
-                  )}
-                </div>
-                <span className="lsm-contact-name">{c.name.split(' ')[0]}</span>
-              </button>
-            )
-          })}
-        </div>
-        {selectedContacts.length === 0 && (
-          <p className="lsm-contacts-hint" role="status">
-            <MdWarning size={13} /> Select at least one contact to continue
+      {!hideContactPicker && (
+        <div className="lsm-section">
+          <p className="lsm-section-label">
+            <MdPeople size={14} /> Share with
+            {selectedContacts.length > 0 && (
+              <span className="lsm-selected-count">{selectedContacts.length} selected</span>
+            )}
           </p>
-        )}
-      </div>
+          <div className="lsm-contacts" role="group" aria-label="Select contacts">
+            {contacts.map(c => {
+              const sel = selectedContacts.includes(c._id)
+              return (
+                <button
+                  key={c._id}
+                  className={`lsm-contact-btn ${sel ? 'selected' : ''}`}
+                  onClick={() => toggleContact(c._id)}
+                  aria-pressed={sel}
+                  aria-label={`${sel ? 'Deselect' : 'Select'} ${c.name}`}
+                >
+                  <div className="lsm-contact-avatar-wrap">
+                    <Avatar initials={c.initials} size={40} isOnline={c.isOnline} />
+                    {sel && (
+                      <div className="lsm-contact-check" aria-hidden>
+                        <MdCheck size={12} />
+                      </div>
+                    )}
+                  </div>
+                  <span className="lsm-contact-name">{c.name.split(' ')[0]}</span>
+                </button>
+              )
+            })}
+          </div>
+          {selectedContacts.length === 0 && (
+            <p className="lsm-contacts-hint" role="status">
+              <MdWarning size={13} /> Select at least one contact to continue
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Action buttons */}
       <div className="lsm-actions">
@@ -368,17 +370,24 @@ function StepSuccess({ mode, duration, selectedContacts, contacts, onClose }) {
 /* ──────────────────────────────────────
    Location Share Modal — Root
 ────────────────────────────────────── */
-export default function LocationShareModal({ onClose }) {
+export default function LocationShareModal({ onClose, preSelectedId, hideContactPicker }) {
   const { myLocation, shareLocation, isSharing } = useContext(LocationContext)
+  const { rooms, sendMessage } = useContext(ChatContext)
 
   const [step, setStep] = useState(1)   // 1 = options, 2 = confirm, 3 = success
   const [mode, setMode] = useState('live')
   const [duration, setDuration] = useState(DURATION_OPTIONS[1]) // 1 hour default
-  const [selectedContacts, setSel] = useState([])
+  const [selectedContacts, setSel] = useState(preSelectedId ? [preSelectedId] : [])
   const [sharing, setSharing] = useState(false)
   const [permissionState, setPermState] = useState(
     myLocation ? 'granted' : 'loading'
   )
+
+  useEffect(() => {
+    if (preSelectedId && selectedContacts.length === 0) {
+      setSel([preSelectedId])
+    }
+  }, [preSelectedId, selectedContacts.length])
 
   const backdropRef = useRef(null)
 
@@ -406,11 +415,28 @@ export default function LocationShareModal({ onClose }) {
     setSharing(true)
     // Simulate API call
     await new Promise(r => setTimeout(r, 1400))
-    if (shareLocation) {
-      await shareLocation({
-        durationMinutes: duration.mins,
-        sharedWith: selectedContacts,
-      }).catch(() => {})
+    try {
+      if (shareLocation) {
+        await shareLocation({
+          durationMinutes: duration.mins,
+          sharedWith: selectedContacts,
+        })
+      }
+      if (myLocation && selectedContacts.length > 0) {
+        selectedContacts.forEach(contactId => {
+          // Find the room that contains this contact to send message to the correct roomId
+          const matchingRoom = (rooms || []).find(r => 
+            r.participants?.some(p => String(p._id) === String(contactId))
+          )
+          const targetId = matchingRoom ? matchingRoom._id : contactId
+
+          sendMessage(targetId, 'Shared Live Location', 'location', { 
+            location: { latitude: myLocation.lat, longitude: myLocation.lng } 
+          })
+        })
+      }
+    } catch (err) {
+      console.error('shareLocation error:', err)
     }
     setSharing(false)
     setStep(3)
@@ -477,18 +503,19 @@ export default function LocationShareModal({ onClose }) {
             <StepOptions
               mode={mode} setMode={setMode}
               duration={duration} setDuration={setDuration}
-              contacts={MOCK_CONTACTS}
+              contacts={rooms || MOCK_CONTACTS}
               selectedContacts={selectedContacts}
               toggleContact={toggleContact}
               onNext={() => setStep(2)}
               onCancel={onClose}
+              hideContactPicker={hideContactPicker || !!preSelectedId}
             />
           )}
           {step === 2 && (
             <StepConfirm
               mode={mode} duration={duration}
               selectedContacts={selectedContacts}
-              contacts={MOCK_CONTACTS}
+              contacts={rooms || MOCK_CONTACTS}
               onBack={() => setStep(1)}
               onConfirm={handleConfirm}
               sharing={sharing}
@@ -498,7 +525,7 @@ export default function LocationShareModal({ onClose }) {
             <StepSuccess
               mode={mode} duration={duration}
               selectedContacts={selectedContacts}
-              contacts={MOCK_CONTACTS}
+              contacts={rooms || MOCK_CONTACTS}
               onClose={onClose}
             />
           )}

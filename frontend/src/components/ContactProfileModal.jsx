@@ -24,6 +24,7 @@ export default function ContactProfileModal({ contact, onClose }) {
               color={contact.color || 'var(--primary)'}
             />
             <h2 className="cpm-name">{contact.name}</h2>
+            {contact.phone && <p className="cpm-phone">{contact.phone}</p>}
             <p className="cpm-status">
               {contact.isOnline ? 'Online' : 'Last seen recently'}
             </p>

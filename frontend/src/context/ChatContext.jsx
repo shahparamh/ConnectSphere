@@ -43,6 +43,36 @@ function chatReducer(state, action) {
     case 'SET_ROOMS': return { ...state, rooms: action.payload }
     case 'SET_ACTIVE_ROOM': return { ...state, activeRoomId: action.payload }
     case 'SET_MESSAGES': return { ...state, messages: { ...state.messages, [action.roomId]: action.payload } }
+    case 'UPDATE_MESSAGE_STATUS':
+      return {
+        ...state,
+        messages: {
+          ...state.messages,
+          [action.roomId]: (state.messages[action.roomId] || []).map(m =>
+            m._id === action.payload.messageId ? { ...m, status: action.payload.status } : m
+          ),
+        },
+      }
+    case 'UPDATE_MESSAGES_STATUS':
+      return {
+        ...state,
+        messages: {
+          ...state.messages,
+          [action.roomId]: (state.messages[action.roomId] || []).map(m =>
+            action.payload.messageIds.includes(m._id) ? { ...m, status: action.payload.status } : m
+          ),
+        },
+      }
+    case 'UPDATE_MESSAGE_ID':
+      return {
+        ...state,
+        messages: {
+          ...state.messages,
+          [action.roomId]: (state.messages[action.roomId] || []).map(m =>
+            m._id === action.payload.tempId ? { ...m, _id: action.payload.messageId } : m
+          ),
+        },
+      }
     case 'ADD_MESSAGE':
       return {
         ...state,
@@ -52,7 +82,7 @@ function chatReducer(state, action) {
         },
         rooms: state.rooms.map(r =>
           r._id === action.roomId
-            ? { ...r, lastMessage: action.payload.text, timestamp: action.payload.timestamp, unreadCount: r._id === state.activeRoomId ? 0 : r.unreadCount + (action.payload.isSent ? 0 : 1) }
+            ? { ...r, lastMessage: action.payload.text, timestamp: action.payload.timestamp, unreadCount: r.unreadCount + (action.payload.isSent ? 0 : 1) }
             : r
         ),
       }
@@ -101,7 +131,28 @@ export const ChatProvider = ({ children }) => {
         const res = await axios.get('/api/rooms', {
           headers: { Authorization: `Bearer ${token}` }
         })
-        dispatch({ type: 'SET_ROOMS', payload: res.data })
+        
+        // Map DM rooms to use the other participant's name at the root level
+        const decoratedRooms = res.data.map(r => {
+          if (!r.isGroup && r.participants) {
+            const other = r.participants.find(p => p._id !== user?._id)
+            if (other) {
+              r.name = other.name
+              r.phone = other.phoneNumber
+              r.isOnline = other.status === 'online'
+            }
+          }
+          return r
+        })
+
+        // Filter out malformed rooms (e.g. Groups must have a name, DMs must have known other participant)
+        const validRooms = decoratedRooms.filter(r => {
+          if (!r._id) return false
+          if (r.isGroup) return !!r.name
+          return !!r.name // Supported by our mapping above
+        })
+        
+        dispatch({ type: 'SET_ROOMS', payload: validRooms })
       } catch (err) {
         console.error('Fetch rooms error:', err)
       }
@@ -125,7 +176,27 @@ export const ChatProvider = ({ children }) => {
     s.on('disconnect', () => dispatch({ type: 'SET_CONNECTED', payload: false }))
 
     s.on('receive-message', ({ roomId, message }) => {
-      dispatch({ type: 'ADD_MESSAGE', roomId, payload: { ...message, isSent: false } })
+      dispatch({ type: 'ADD_MESSAGE', roomId, payload: { ...message, isSent: false, status: 'delivered' } })
+      if (message._id) {
+        s.emit('message-delivered', { messageId: message._id, roomId })
+        // If viewing this room actively in a focused tab, mark it read immediately
+        if (roomId === state.activeRoomId && document.hasFocus()) {
+          s.emit('mark-read', { roomId, messageIds: [message._id] })
+          dispatch({ type: 'MARK_READ', roomId })
+        }
+      }
+    })
+
+    s.on('message-status', ({ roomId, messageId, status }) => {
+      dispatch({ type: 'UPDATE_MESSAGE_STATUS', roomId, payload: { messageId, status } })
+    })
+
+    s.on('messages-read', ({ roomId, messageIds, status }) => {
+      dispatch({ type: 'UPDATE_MESSAGES_STATUS', roomId, payload: { messageIds, status } })
+    })
+
+    s.on('message-sent', ({ tempId, messageId, roomId }) => {
+      dispatch({ type: 'UPDATE_MESSAGE_ID', roomId, payload: { tempId, messageId } })
     })
 
     s.on('typing', ({ roomId, userId }) => {
@@ -216,7 +287,7 @@ export const ChatProvider = ({ children }) => {
     if (roomId === 'rai') {
       fetchAIResponse(roomId, text)
     } else {
-      socketRef.current?.emit('send-message', { roomId, message: { text, type, ...extra } })
+      socketRef.current?.emit('send-message', { roomId, message: { text, type, tempId: msg._id, ...extra } })
     }
   }, [])
 
@@ -225,6 +296,16 @@ export const ChatProvider = ({ children }) => {
     
     dispatch({ type: 'SET_ACTIVE_ROOM', payload: roomId })
     dispatch({ type: 'MARK_READ', roomId })
+    
+    // Mark cached unread as read
+    const activeMsgs = state.messages[roomId] || []
+    const unreadIds = activeMsgs
+      .filter(m => String(m.senderId?._id || m.senderId) !== String(user?._id) && m.status !== 'read')
+      .map(m => m._id)
+    if (unreadIds.length > 0) {
+      socketRef.current?.emit('mark-read', { roomId, messageIds: unreadIds })
+    }
+
     socketRef.current?.emit('join-room', roomId)
 
     // Fetch messages for this room
@@ -234,6 +315,13 @@ export const ChatProvider = ({ children }) => {
           headers: { Authorization: `Bearer ${token}` }
         })
         dispatch({ type: 'SET_MESSAGES', roomId, payload: res.data })
+        // Mark unread as read
+        const unreadIds = res.data
+          .filter(m => String(m.senderId?._id || m.senderId) !== String(user?._id) && m.status !== 'read')
+          .map(m => m._id)
+        if (unreadIds.length > 0) {
+          socketRef.current?.emit('mark-read', { roomId, messageIds: unreadIds })
+        }
       } catch (err) {
         console.error('Fetch messages error:', err)
       }
@@ -257,7 +345,7 @@ export const ChatProvider = ({ children }) => {
   const addRoom = useCallback(async ({ name, phone }) => {
     try {
       // 1. Find user by phone
-      const userRes = await axios.get(`/api/users/find/${phone}`, {
+      const userRes = await axios.get(`/api/users/find/${encodeURIComponent(phone)}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       const targetUser = userRes.data

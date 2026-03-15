@@ -10,7 +10,9 @@ const userRoutes    = require('./routes/users')
 const roomRoutes    = require('./routes/rooms')
 const locationRoutes = require('./routes/location')
 const aiRoutes       = require('./routes/ai')
+const uploadRoutes   = require('./routes/upload')
 const { registerSocketHandlers } = require('./socket/handlers')
+const path = require('path')
 
 const app    = express()
 const server = http.createServer(app)
@@ -23,7 +25,8 @@ const io = new Server(server, {
     ],
     methods: ['GET', 'POST'],
     credentials: true,
-  }
+  },
+  maxHttpBufferSize: 1e8 // 100MB
 })
 
 // ── Middleware ──────────────────────────────────────────
@@ -36,6 +39,9 @@ app.use(cors({
 }))
 app.use(express.json({ limit: '50mb' }))
 app.use(express.urlencoded({ extended: true }))
+
+app.use('/api/upload', uploadRoutes)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 
 // ── API Routes ──────────────────────────────────────────
 app.use('/api/auth',     authRoutes)

@@ -331,7 +331,7 @@
 
 /* Read receipt */
 .receipt      { flex-shrink: 0; opacity: 0.7; }
-.receipt.read { opacity: 1; color: rgba(200,230,255,1) !important; }
+.receipt.read { opacity: 1; color: #10B981 !important; }
 .bubble-recv  .receipt.read { color: var(--primary) !important; }
 .receipt.delivered { color: rgba(255,255,255,0.7); }
 .receipt.sent      { color: rgba(255,255,255,0.5); }

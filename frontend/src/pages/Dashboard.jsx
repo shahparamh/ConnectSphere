@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect, useCallback, useMemo } from 'react'
+import { useState, useContext, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   MdSearch, MdEdit, MdFilterList, MdGroup, MdMailOutline,
@@ -153,7 +153,6 @@ function ChatList({ activeId, onSelect, onNewContact, onDeleteChat, onOpenProfil
       <div className="cl-header">
         <div className="cl-header-top">
           <div className="cl-brand">
-            <div className="cl-logo"><ConnectSphereLogo size={36} /></div>
             <h2 className="cl-title">Messages</h2>
             {totalUnread > 0 && (
               <span className="cl-total-badge" aria-label={`${totalUnread} unread`}>{totalUnread}</span>
@@ -457,13 +456,16 @@ export default function Dashboard() {
   const { rooms, setActiveRoom, deleteRoom, addRoom } = useContext(ChatContext)
   const [showAddModal, setShowAddModal] = useState(false)
 
+  const isInitialLoad = useRef(true)
+  
   useEffect(() => {
-    if (!selectedRoom && rooms.length > 0) {
+    if (isInitialLoad.current && rooms.length > 0) {
       const firstRoom = rooms.find(r => r.pinned) || rooms[0]
       setSelectedRoom(firstRoom)
       setActiveRoom(firstRoom._id)
+      isInitialLoad.current = false // Guard against auto-select loop on Back click
     }
-  }, [rooms, selectedRoom, setActiveRoom])
+  }, [rooms, setActiveRoom])
 
   const handleSelectRoom = useCallback((room) => {
     setSelectedRoom(room)
@@ -501,7 +503,7 @@ export default function Dashboard() {
       {/* RIGHT: Chat view or welcome panel (desktop only) */}
       <div className="dashboard-main" aria-label={selectedRoom ? `Chat with ${selectedRoom.name}` : 'Select a chat'}>
         {selectedRoom
-          ? <ChatPage inlineRoomId={selectedRoom._id} />
+          ? <ChatPage inlineRoomId={selectedRoom._id} onBack={() => setSelectedRoom(null)} />
           : <WelcomePanel 
               onSelectContact={handleSelectRoom}
               onAddContact={() => setShowAddModal(true)} 

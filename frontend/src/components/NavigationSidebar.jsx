@@ -32,7 +32,7 @@ export default function NavigationSidebar() {
       {/* Logo */}
       <div className="nav-logo">
         <div className="nav-logo-icon">
-          <ConnectSphereLogo size={24} />
+          <ConnectSphereLogo size={32} />
         </div>
         {expanded && <span className="nav-logo-text">ConnectSphere</span>}
       </div>
