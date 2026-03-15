@@ -54,7 +54,7 @@ function GoogleButton({ label, onSuccess }) {
         useOneTap
         theme="filled_blue"
         shape="pill"
-        width="101%"
+        width="100%"
         text="continue_with"
       />
     </div>

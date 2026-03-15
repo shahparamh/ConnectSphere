@@ -734,3 +734,16 @@
   transition: text-decoration-color var(--trans-fast);
 }
 .auth-switch-link:hover { text-decoration-color: var(--primary); }
+
+/* ── Google Button Container ── */
+.google-login-row {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* Force iframe transparency to prevent white box */
+.google-login-row iframe {
+  background: transparent !important;
+  color-scheme: dark;
+}
