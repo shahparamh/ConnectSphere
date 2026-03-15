@@ -474,8 +474,8 @@ export default function Dashboard() {
     }
   }, [navigate, setActiveRoom])
 
-  const handleAddContact = (contact) => {
-    const newRoom = addRoom(contact)
+  const handleAddContact = async (contact) => {
+    const newRoom = await addRoom(contact)
     handleSelectRoom(newRoom)
   }
 

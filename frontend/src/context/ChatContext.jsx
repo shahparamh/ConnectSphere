@@ -221,6 +221,8 @@ export const ChatProvider = ({ children }) => {
   }, [])
 
   const setActiveRoom = useCallback(async (roomId) => {
+    if (!roomId || roomId === 'undefined') return // Guard against invalid ID
+    
     dispatch({ type: 'SET_ACTIVE_ROOM', payload: roomId })
     dispatch({ type: 'MARK_READ', roomId })
     socketRef.current?.emit('join-room', roomId)
