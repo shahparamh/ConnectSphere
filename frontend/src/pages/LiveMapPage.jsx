@@ -88,9 +88,15 @@ const projectToViewport = (point, center, zoom) => {
 
 const isVisibleInViewport = ({ x, y }) => x > -12 && x < 112 && y > -12 && y < 112
 
+const FALLBACK_MAP_CONTACTS = [
+  { _id: 'map1', name: 'Sarah Chen', initials: 'SC', isOnline: true },
+  { _id: 'map2', name: 'Alex Kumar', initials: 'AK', isOnline: true },
+  { _id: 'map3', name: 'Priya Sharma', initials: 'PS', isOnline: false },
+]
+
 const createNearbyFriends = (center) => ([
   {
-    ...MOCK_CONTACTS[0],
+    ...FALLBACK_MAP_CONTACTS[0],
     color: '#3A6FF7',
     location: makeNearbyPoint(center, 0.0038, 0.0026),
     accuracy: 12,
@@ -98,7 +104,7 @@ const createNearbyFriends = (center) => ([
     address: '2 min away',
   },
   {
-    ...MOCK_CONTACTS[2],
+    ...FALLBACK_MAP_CONTACTS[1],
     color: '#22D3EE',
     location: makeNearbyPoint(center, -0.0022, 0.0058),
     accuracy: 18,
@@ -106,7 +112,7 @@ const createNearbyFriends = (center) => ([
     address: 'Near your route',
   },
   {
-    ...MOCK_CONTACTS[4],
+    ...FALLBACK_MAP_CONTACTS[2],
     color: '#F59E0B',
     location: makeNearbyPoint(center, 0.0052, -0.0034),
     accuracy: 10,
@@ -136,7 +142,7 @@ function FriendLocationMarker({ contact, x, y, selected, onClick, distance, onRo
       className={`flm-root ${selected ? 'selected' : ''}`}
       style={{ left: `${x}%`, top: `${y}%` }}
       onClick={onClick}
-      aria-label={`${contact.name}'s location${distance ? `, ${distance}m away` : ''}`}
+      aria-label={`${contact?.name || 'Contact'}'s location${distance ? `, ${distance}m away` : ''}`}
       aria-pressed={selected}
     >
       <div className={`flm-pulse ${selected ? 'active' : ''}`} aria-hidden />
@@ -144,7 +150,7 @@ function FriendLocationMarker({ contact, x, y, selected, onClick, distance, onRo
         <Avatar initials={contact.initials} size={selected ? 42 : 36} color={contact.color} isOnline={contact.isOnline} />
       </div>
       <div className="flm-label">
-        <span className="flm-name">{contact.name.split(' ')[0]}</span>
+        <span className="flm-name">{(contact?.name || 'Unknown').split(' ')[0]}</span>
         {distance && <span className="flm-dist">{distance < 1000 ? `${distance}m` : `${(distance / 1000).toFixed(1)}km`}</span>}
         {contact.speed !== undefined && (
           <span className="flm-speed">
