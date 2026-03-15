@@ -740,6 +740,15 @@
   width: 100%;
   display: flex;
   justify-content: center;
+  border-radius: 9999px; /* Force pill container */
+  overflow: hidden;      /* Clip the white iframe corners */
+}
+
+/* Target the direct div that SDK wraps around the iframe */
+.google-login-row > div {
+  width: 100% !important;
+  border-radius: 9999px !important;
+  overflow: hidden !important;
 }
 
 /* Force iframe transparency to prevent white box */
