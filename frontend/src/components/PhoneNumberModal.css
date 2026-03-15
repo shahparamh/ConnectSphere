@@ -1,0 +1,211 @@
+.pnm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 11, 20, 0.85);
+  backdrop-filter: blur(12px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.pnm-card {
+  background: var(--gradient-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 420px;
+  padding: 40px;
+  position: relative;
+  box-shadow: var(--shadow-xl), 0 0 40px rgba(var(--primary-rgb), 0.1);
+  text-align: center;
+}
+
+.pnm-header {
+  margin-bottom: 32px;
+}
+
+.pnm-icon-wrap {
+  width: 64px;
+  height: 64px;
+  background: rgba(var(--primary-rgb), 0.1);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+
+.pnm-card h1 {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.pnm-card p {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.pnm-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pnm-input-group {
+  display: flex;
+  align-items: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 4px;
+  transition: all var(--trans-base);
+}
+
+.pnm-input-group:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.15);
+}
+
+.pnm-prefix {
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-right: 1px solid var(--border);
+}
+
+.pnm-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 14px 16px;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: 0.05em;
+}
+
+.pnm-input::placeholder {
+  color: var(--text-muted);
+  letter-spacing: normal;
+  font-size: 15px;
+}
+
+.pnm-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.pnm-submit {
+  background: var(--gradient-primary);
+  color: white;
+  padding: 16px;
+  border-radius: var(--radius-lg);
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all var(--trans-base);
+  box-shadow: 0 8px 20px rgba(var(--primary-rgb), 0.3);
+}
+
+.pnm-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.pnm-submit:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(var(--primary-rgb), 0.4);
+}
+
+.pnm-footer {
+  font-size: 12px !important;
+  opacity: 0.6;
+}
+
+/* OTP Step */
+.otp-container {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.otp-input {
+  width: 48px;
+  height: 56px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  transition: all var(--trans-base);
+}
+
+.otp-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.15);
+  background: var(--surface);
+}
+
+.resend-btn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: opacity var(--trans-fast);
+}
+
+.resend-btn:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+/* Success State */
+.pnm-success {
+  padding: 10px 0;
+}
+
+.pnm-success h2 {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 24px 0 12px;
+}
+
+.pnm-btn-success {
+  margin-top: 32px;
+  width: 100%;
+}
+
+[data-theme="light"] .pnm-overlay {
+  background: rgba(245, 248, 255, 0.85);
+}
+
+[data-theme="light"] .pnm-card {
+  background: #ffffff;
+  box-shadow: 0 30px 60px rgba(30, 41, 59, 0.1);
+}
+
+[data-theme="light"] .pnm-input-group {
+  background: #f8faff;
+}

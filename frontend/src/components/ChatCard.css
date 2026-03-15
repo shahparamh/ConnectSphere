@@ -1,0 +1,87 @@
+.chat-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--trans-fast);
+  border: 1.5px solid transparent;
+  position: relative;
+}
+
+.chat-card:hover {
+  background: rgba(58, 111, 247, 0.08);
+  border-color: rgba(58, 111, 247, 0.15);
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
+}
+
+.chat-card:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.chat-card.active {
+  background: rgba(58, 111, 247, 0.12);
+  border-color: rgba(58, 111, 247, 0.3);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.16);
+}
+
+.chat-card-avatar {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.chat-card-pin {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  font-size: 10px;
+}
+
+.chat-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: 2px;
+}
+
+.chat-card-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-card-time {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.chat-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.chat-card-preview {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  line-height: 1.4;
+}

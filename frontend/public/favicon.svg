@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3A6FF7"/>
+      <stop offset="100%" stop-color="#7A5AF8"/>
+    </linearGradient>
+  </defs>
+  <rect width="48" height="48" rx="12" fill="url(#g)"/>
+  <circle cx="24" cy="24" r="10" fill="none" stroke="white" stroke-width="2.5" opacity="0.9"/>
+  <circle cx="24" cy="24" r="5"  fill="none" stroke="white" stroke-width="2.5" opacity="0.7"/>
+  <circle cx="24" cy="24" r="2"  fill="white"/>
+  <!-- Signal arc lines -->
+  <path d="M14 24 Q14 14 24 14" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+  <path d="M34 24 Q34 14 24 14" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+  <path d="M14 24 Q14 34 24 34" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+  <path d="M34 24 Q34 34 24 34" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+</svg>

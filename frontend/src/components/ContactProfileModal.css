@@ -1,0 +1,183 @@
+.cpm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 14, 24, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  animation: fadeIn 0.3s var(--ease);
+}
+
+.cpm-container {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-3xl);
+  box-shadow: var(--shadow-2xl);
+  overflow: hidden;
+  animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cpm-header {
+  padding: var(--space-4);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.cpm-close {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: all var(--trans-base);
+}
+
+.cpm-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.cpm-content {
+  padding: var(--space-8) var(--space-6) var(--space-10);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cpm-profile-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: var(--space-8);
+}
+
+.cpm-name {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: var(--space-4) 0 var(--space-1);
+}
+
+.cpm-status {
+  font-size: 0.875rem;
+  color: var(--success);
+  font-weight: 600;
+}
+
+.cpm-actions {
+  display: flex;
+  gap: var(--space-6);
+  margin-bottom: var(--space-10);
+}
+
+.cpm-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  transition: all var(--trans-base);
+}
+
+.cpm-action-btn:hover {
+  transform: translateY(-4px);
+}
+
+.cpm-action-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-xl);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--trans-base);
+}
+
+.cpm-action-btn:hover .cpm-action-icon {
+  background: var(--gradient-primary);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 8px 16px rgba(var(--primary-rgb), 0.3);
+}
+
+.cpm-action-btn span {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.cpm-info-section {
+  width: 100%;
+  background: var(--surface-2);
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--border);
+  padding: var(--space-2);
+  margin-bottom: var(--space-8);
+}
+
+.cpm-info-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+
+.cpm-info-item:not(:last-child) {
+  border-bottom: 1px solid var(--border);
+}
+
+.cpm-info-icon {
+  color: var(--primary);
+  font-size: 1.25rem;
+  padding: var(--space-2);
+  background: rgba(var(--primary-rgb), 0.1);
+  border-radius: var(--radius-lg);
+}
+
+.cpm-info-label {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.cpm-info-val {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 2px 0 0;
+}
+
+.cpm-danger-zone {
+  width: 100%;
+}
+
+.cpm-danger-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-xl);
+  background: rgba(244, 63, 94, 0.05);
+  color: var(--danger);
+  font-size: 0.875rem;
+  font-weight: 700;
+  transition: all var(--trans-base);
+}
+
+.cpm-danger-btn:hover {
+  background: var(--danger);
+  color: white;
+}

@@ -1,0 +1,205 @@
+/* NavigationSidebar Styles */
+.nav-sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: var(--sidebar-width);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  transition: width var(--trans-base), box-shadow var(--trans-base), background var(--trans-base);
+  overflow: visible;
+  box-shadow: 4px 0 24px var(--shadow-color);
+}
+
+.nav-sidebar.expanded {
+  width: var(--sidebar-expanded);
+  box-shadow: var(--shadow-lg);
+}
+
+/* hidden on mobile */
+@media (max-width: 768px) {
+  .nav-sidebar { display: none; }
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-8) var(--space-4) var(--space-4);
+  min-height: 90px;
+}
+
+.nav-logo-icon {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: var(--radius-xl);
+  background: rgba(var(--primary-rgb), 0.1);
+  border: 1px solid rgba(var(--primary-rgb), 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: all var(--trans-fast);
+}
+
+[data-theme="light"] .nav-logo-icon {
+  background: white;
+  border-color: rgba(var(--primary-rgb), 0.1);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.08);
+}
+
+.nav-logo:hover .nav-logo-icon {
+  transform: rotate(-5deg) scale(1.05);
+  background: rgba(var(--primary-rgb), 0.15);
+  border-color: var(--primary);
+}
+
+.nav-logo-text {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  white-space: nowrap;
+  animation: fadeIn 0.3s var(--ease);
+}
+
+.nav-items {
+  list-style: none;
+  flex: 1;
+  padding: var(--space-4) var(--space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-xl);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all var(--trans-fast);
+  width: 100%;
+  white-space: nowrap;
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: relative;
+}
+
+.nav-link:hover {
+  background: rgba(var(--primary-rgb), 0.08);
+  color: var(--text-primary);
+  transform: translateX(4px);
+}
+
+.nav-link.active {
+  background: rgba(var(--primary-rgb), 0.12);
+  color: var(--primary);
+  box-shadow: inset 0 0 0 1px rgba(var(--primary-rgb), 0.2);
+  backdrop-filter: blur(8px);
+}
+
+[data-theme="light"] .nav-link.active {
+  background: rgba(var(--primary-rgb), 0.08);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.12);
+}
+
+.nav-link.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 25%;
+  bottom: 25%;
+  width: 4px;
+  background: var(--primary);
+  border-radius: 0 4px 4px 0;
+  box-shadow: 2px 0 10px rgba(var(--primary-rgb), 0.5);
+}
+
+.nav-icon {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  transition: all var(--trans-fast);
+}
+
+.nav-link.active .nav-icon {
+  color: var(--primary);
+}
+
+.nav-label {
+  animation: fadeIn 0.2s var(--ease);
+}
+
+.nav-bottom {
+  padding: var(--space-4) var(--space-2) var(--space-6);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.nav-divider {
+  height: 1px;
+  background: var(--border);
+  margin: var(--space-2) var(--space-4);
+  opacity: 0.5;
+}
+
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.nav-user-info {
+  flex: 1;
+  min-width: 0;
+  animation: fadeIn 0.15s var(--ease);
+}
+
+.nav-user-name {
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-user-status {
+  font-size: 0.72rem;
+  color: var(--success);
+  font-weight: 500;
+}
+
+.nav-logout-btn {
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  transition: all var(--trans-fast);
+  animation: fadeIn 0.15s var(--ease);
+}
+
+.nav-logout-btn:hover {
+  background: rgba(244, 63, 94, 0.1);
+  color: var(--danger);
+}
