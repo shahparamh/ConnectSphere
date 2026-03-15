@@ -56,7 +56,7 @@ function ChatPreviewCard({ room, isActive, onClick }) {
       {/* Avatar with online indicator */}
       <div className="card-avatar-wrap">
         <Avatar
-          initials={room.initials || room.name.slice(0, 2).toUpperCase()}
+          initials={room.initials || (room.name ? room.name.slice(0, 2).toUpperCase() : '??')}
           size={50}
           isOnline={room.isOnline}
           color={room.color}
@@ -110,7 +110,7 @@ const FILTERS = [
 function ContactItem({ room, onSelect }) {
   return (
     <button className="contact-item-row" onClick={() => onSelect(room)}>
-      <Avatar initials={room.initials || room.name.slice(0, 2).toUpperCase()} size={42} isOnline={room.isOnline} color={room.color} />
+      <Avatar initials={room.initials || (room.name ? room.name.slice(0, 2).toUpperCase() : '??')} size={42} isOnline={room.isOnline} color={room.color} />
       <div className="contact-info">
         <p className="contact-name">{room.name}</p>
         <p className="contact-status">{room.isOnline ? 'Online' : 'Yesterday'}</p>
@@ -421,8 +421,8 @@ function WelcomePanel({ onSelectContact, onAddContact, onOpenProfile }) {
                 onClick={() => onSelectContact(r)}
                 aria-label={`Open chat with ${r.name}`}
               >
-                <Avatar initials={r.initials || r.name.slice(0, 2).toUpperCase()} size={46} isOnline={r.isOnline} color={r.color} />
-                <span className="wp-contact-name">{r.name.split(' ')[0]}</span>
+                <Avatar initials={r.initials || (r.name ? r.name.slice(0, 2).toUpperCase() : '??')} size={46} isOnline={r.isOnline} color={r.color} />
+                <span className="wp-contact-name">{r.name ? r.name.split(' ')[0] : 'User'}</span>
               </button>
             ))}
             <button className="wp-contact-btn wp-new-btn" aria-label="Add contact" onClick={onAddContact}>
