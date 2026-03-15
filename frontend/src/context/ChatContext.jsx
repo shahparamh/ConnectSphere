@@ -228,7 +228,7 @@ export const ChatProvider = ({ children }) => {
     socketRef.current?.emit('join-room', roomId)
 
     // Fetch messages for this room
-    if (!state.messages[roomId]) {
+    if (roomId !== 'rai' && !state.messages[roomId]) {
       try {
         const res = await axios.get(`/api/rooms/${roomId}/messages`, {
           headers: { Authorization: `Bearer ${token}` }
