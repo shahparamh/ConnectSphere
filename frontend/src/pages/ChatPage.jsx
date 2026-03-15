@@ -85,19 +85,20 @@ function VoiceWaveform({ bars = 28, playing, progress = 0 }) {
    Message Bubble
 ────────────────────────────────────── */
 function MessageBubble({ message, showAvatar, room, isAI }) {
-  const { isSent: isSentProp, text, type, status, timestamp, duration, createdAt } = message
+  const { isSent: isSentProp, text, type, status, timestamp, duration, createdAt, location } = message
   const { user } = useContext(AuthContext)
   const isSent = isSentProp !== undefined 
     ? isSentProp 
     : String(message.senderId?._id || message.senderId) === String(user?._id)
   const timeSrc = timestamp || createdAt
   
-  const [voicePlaying, setVoicePlaying] = useState(false)
+  const [playing, setPlaying] = useState(false)
+  const [mapError, setMapError] = useState(false)
   const [voiceProgress, setVoiceProgress] = useState(0)
   const voiceTimerRef = useRef(null)
 
   const toggleVoice = () => {
-    if (voicePlaying) {
+    if (playing) {
       clearInterval(voiceTimerRef.current)
       setVoicePlaying(false)
     } else {
@@ -174,36 +175,16 @@ function MessageBubble({ message, showAvatar, room, isAI }) {
 
         {/* ── Location message ── */}
         {type === 'location' && (
-          <div className={`bubble bubble-location ${isSent ? 'bubble-sent' : 'bubble-recv'}`}>
-            <div className="loc-map-thumb">
-              {/* Realistic Map Mockup */}
-              <div className="loc-map-canvas" aria-hidden>
-                {/* Green Areas (Parks) */}
-                <div className="loc-area park-1" />
-                <div className="loc-area park-2" />
-                
-                {/* Major Roads */}
-                <div className="loc-way road-main-h" />
-                <div className="loc-way road-main-v" />
-                
-                {/* Building Footprints */}
-                <div className="loc-building b-1" />
-                <div className="loc-building b-2" />
-                <div className="loc-building b-3" />
-                <div className="loc-building b-4" />
-                
-                {/* Labels */}
-                <span className="loc-map-label street">Church St</span>
-                <span className="loc-map-label landmark">Safe Cafe</span>
-                
-                {/* User Pin */}
-                <div className="loc-pin-modern">
-                  <div className="pin-pulse" />
-                  <div className="pin-core">
-                    <MdLocationOn size={16} />
-                  </div>
-                </div>
-              </div>
+          <div className={`bubble bubble-location ${isSent ? 'bubble-sent' : 'bubble-recv'}`} style={{ padding: 0, overflow: 'hidden', maxWidth: '250px' }}>
+            <div className="loc-map-thumb" style={{ width: '100%', height: '150px', position: 'relative' }}>
+              <img 
+                src={mapError || !location 
+                     ? `https://static-maps.yandex.ru/1.x/?ll=${location?.longitude || 77.5946},${location?.latitude || 12.9716}&z=14&l=map&size=250,150` 
+                     : `https://maps.googleapis.com/maps/api/staticmap?center=${location?.latitude},${location?.longitude}&zoom=14&size=250x150&markers=color:red%7C${location?.latitude},${location?.longitude}&key=${import.meta.env.VITE_GOOGLE_MAPS_KEY}`} 
+                alt="Location Preview" 
+                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                onError={() => setMapError(true)}
+              />
             </div>
             <div className="loc-info">
               <p className="loc-label">

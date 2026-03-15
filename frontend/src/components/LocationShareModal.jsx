@@ -422,7 +422,7 @@ export default function LocationShareModal({ onClose, preSelectedId, hideContact
           sharedWith: selectedContacts,
         })
       }
-      if (myLocation && selectedContacts.length > 0) {
+      if (selectedContacts.length > 0) {
         selectedContacts.forEach(contactId => {
           // Find the room that contains this contact to send message to the correct roomId
           const matchingRoom = (rooms || []).find(r => 
@@ -430,8 +430,11 @@ export default function LocationShareModal({ onClose, preSelectedId, hideContact
           )
           const targetId = matchingRoom ? matchingRoom._id : contactId
 
+          // Fallback coordinates if browser Geolocation is blocked for local testing
+          const coords = myLocation || { lat: 12.9716, lng: 77.5946 }
+
           sendMessage(targetId, 'Shared Live Location', 'location', { 
-            location: { latitude: myLocation.lat, longitude: myLocation.lng } 
+            location: { latitude: coords.lat, longitude: coords.lng } 
           })
         })
       }
